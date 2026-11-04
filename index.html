@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大唐：開局綁定萬象商城</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121214; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: #1e1e24; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        h1 { font-size: 16px; color: #ffd700; }
+        .btn { background: #2b2b36; border: 1px solid #444; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .main-container { flex: 1; display: flex; position: relative; overflow: hidden; }
+        .chat-box { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 85%; padding: 10px 14px; border-radius: 10px; font-size: 14px; line-height: 1.6; }
+        .msg.user { background: #2e4057; align-self: flex-end; color: #fff; }
+        .msg.ai { background: #22252a; align-self: flex-start; border: 1px solid #333; }
+        .input-area { padding: 12px; background: #1a1a1e; display: flex; gap: 8px; border-top: 1px solid #2a2a30; }
+        input[type="text"] { flex: 1; background: #101012; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; }
+        .sidebar { position: absolute; top: 0; bottom: 0; width: 280px; background: #18181c; border-left: 1px solid #333; z-index: 10; transform: translateX(100%); transition: transform 0.3s ease; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        .sidebar.open { transform: translateX(0); right: 0; }
+        .stat-card { background: #222228; padding: 12px; border-radius: 8px; border: 1px solid #333; }
+        .stat-title { font-size: 12px; color: #888; margin-bottom: 6px; }
+        .stat-val { font-size: 18px; font-weight: bold; color: #4caf50; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-body { background: #222; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>大唐：開局綁定萬象商城</h1>
+        <div>
+            <button class="btn" onclick="toggleModal(true)">⚙️ 設定 API</button>
+            <button class="btn" onclick="toggleSidebar()">📊 系統面板</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="chat-box">
+            <div class="messages" id="messages">
+                <div class="msg ai">【系統】歡迎來到唐朝開元年間。萬象商城系統已成功綁定！你身處長安崇仁坊的一間破舊書齋中，準備如何展開你的第一步？</div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="輸入行動或指令...">
+                <button class="btn" style="background:#ffd700; color:#000; font-weight:bold;" onclick="sendMessage()">發送</button>
+            </div>
+        </div>
+
+        <!-- 雙側邊欄 / 數據面板 -->
+        <div class="sidebar" id="sidebar">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>萬象商城面板</h3>
+                <button class="btn" onclick="toggleSidebar()">✕</button>
+            </div>
+            <div class="stat-card"><div class="stat-title">系統積分</div><div class="stat-val" id="val_pts">100 PT</div></div>
+            <div class="stat-card"><div class="stat-title">啟動資金</div><div class="stat-val" id="val_money">1000 文</div></div>
+            <div class="stat-card"><div class="stat-title">當前學識</div><div class="stat-val" id="val_know" style="color:#2196f3;">寒門書生</div></div>
+            <div class="stat-card"><div class="stat-title">江湖名聲</div><div class="stat-val" id="val_rep" style="color:#ff9800;">默默無聞</div></div>
+        </div>
+    </div>
+
+    <!-- API Key 設定彈窗 -->
+    <div class="modal" id="apiModal">
+        <div class="modal-body">
+            <h3>⚙️ API 設定（自備 Key 模式）</h3>
+            <p style="font-size:12px; color:#aaa; margin:8px 0;">支援 DeepSeek API（用微信/支付寶在官網充值即可取得）：</p>
+            <input type="text" id="apiKeyInput" placeholder="sk-xxxxxxxxxxxxxxxx" style="width:100%; margin-bottom:12px;">
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button class="btn" onclick="toggleModal(false)">取消</button>
+                <button class="btn" style="background:#4caf50;" onclick="saveApiKey()">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiKey = localStorage.getItem('user_api_key') || '';
+        
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function toggleModal(show) { document.getElementById('apiModal').style.display = show ? 'flex' : 'none'; }
+        function saveApiKey() {
+            apiKey = document.getElementById('apiKeyInput').value.trim();
+            localStorage.setItem('user_api_key', apiKey);
+            toggleModal(false);
+            alert('API Key 已儲存！');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if(!text) return;
+            if(!apiKey) { alert('請先點擊右上角「⚙️ 設定 API」填入你的 Key！'); toggleModal(true); return; }
+
+            appendMsg('user', text);
+            input.value = '';
+
+            try {
+                // 發送至 DeepSeek 官方 API（亦可切換為 Gemini / OpenRouter API）
+                const res = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            { role: "system", content: "你是一款大唐文字RPG的系統與大唐世界NPC。除系統機械提示外，對話必須嚴格保持古風沉浸感。" },
+                            { role: "user", content: text }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                const reply = data.choices[0].message.content;
+                appendMsg('ai', reply);
+            } catch(e) {
+                appendMsg('ai', '【系統錯誤】請求失敗，請檢查 API Key 或網路狀況。');
+            }
+        }
+
+        function appendMsg(role, text) {
+            const box = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `msg ${role}`;
+            div.innerText = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>
